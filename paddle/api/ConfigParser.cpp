@@ -18,7 +18,7 @@ limitations under the License. */
 #include "paddle/trainer/Trainer.h"
 
 struct ParameterConfigPrivate {
-  paddle::ParameterPtr parameter;
+  paddle::ParameterPtr parameter; 
   paddle::ParameterConfig config;
 
   inline paddle::ParameterConfig* getConfigPtr() {
