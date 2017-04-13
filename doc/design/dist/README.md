@@ -138,10 +138,14 @@ If trainer's etcd lease expires, it will try set key `/trainer/<unique ID>` agai
 
 When the parameter server is started by the cluster management system, it executes the following steps at startup:
 
-1. Read total number of parameter servers from etcd `/ps_count`
-1. Search though etcd keys `/ps/<index>` (`/ps/0`, `/ps/1`, ...) to find the first non-existant key and set the key using a transaction to avoid concurrent writes. The parameter server's index is inferred from the key name.
+1. Read desired total number of parameter servers from etcd `/ps_desired`
+1. Search though etcd keys `/ps/<index>` (`/ps/0`, `/ps/1`, ...) to find the first non-existant key whose index is smaller than the total number of parameter servers. Set the key using a transaction to avoid concurrent writes. The parameter server's index is inferred from the key name.
 
+	The desired number of parameter servers is 3:
+	
 	<img src="src/paddle-ps-0.png" heigh="300"/>
+	
+	The third parameter server joined:
 	<img src="src/paddle-ps-1.png" heigh="300"/>
 
 1. The parameter server can load parameters if there are already saved parameters in the save path (inferred from its index).
