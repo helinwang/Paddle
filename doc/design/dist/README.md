@@ -1,4 +1,4 @@
-# Distributed Training Design Doc
+# Design Doc: Distributed Training
 
 ## Objective
 
@@ -91,7 +91,7 @@ The communication pattern between the trainers and the parameter servers depends
 
 ## Fault Tolerant
 
-The training job will pause if the master process is dead, or any of the parameter server process is dead. They will be started by the cluster management system and recover in few minutes. Please refer to [fault recovery](#fault-recovery).
+The training job will pause if the master process is dead, or any of the parameter server process is dead. They will be started by [Kubernetes](https://kubernetes.io/) and recover in few minutes. Please refer to [fault recovery](#fault-recovery).
 
 The training job will continue to make progress if there is at least one training process running. The strategy depends on the type of optimization algorithm:
 
@@ -113,7 +113,7 @@ Now we will introduce how each process recovers from failure, the graph below pr
 
 ### Master Process
 
-When the master is started by the cluster management system, it executes the following steps at startup:
+When the master is started by the Kubernetes, it executes the following steps at startup:
 
 1. Grabs a unique *master* lock in etcd, which prevents concurrent master instantiations.
 1. Recovers the task queues from etcd if they already exists, otherwise the master will create them.
@@ -122,11 +122,11 @@ When the master is started by the cluster management system, it executes the fol
 
 The master process will kill itself if its etcd lease expires.
 
-When the master process is dead for any reason, the cluster management system will restart it. It will be online again with all states recovered from etcd in few minutes.
+When the master process is dead for any reason, Kubernetes will restart it. It will be online again with all states recovered from etcd in few minutes.
 
 ### Trainer Process
 
-When the trainer is started by the cluster management system, it executes the following steps at startup:
+When the trainer is started by the Kubernetes, it executes the following steps at startup:
 
 1. Watches the available parameter server prefix keys `/ps/` on etcd and waits until count of parameter servers reaches the desired count.
 1. Generates an unique ID, and sets key `/trainer/<unique ID>` with its contact address as value. The key will be deleted when the lease expires, so the master will be aware of the trainer being online and offline.
@@ -136,7 +136,7 @@ If trainer's etcd lease expires, it will try set key `/trainer/<unique ID>` agai
 
 ### Parameter Server Process
 
-When the parameter server is started by the cluster management system, it executes the following steps at startup:
+When the parameter server is started by Kubernetes, it executes the following steps at startup:
 
 1. Read desired total number of parameter servers from etcd `/ps_desired`
 1. Search though etcd keys `/ps/<index>` (`/ps/0`, `/ps/1`, ...) to find the first non-existant key whose index is smaller than the total number of parameter servers. Set the key using a transaction to avoid concurrent writes. The parameter server's index is inferred from the key name.
