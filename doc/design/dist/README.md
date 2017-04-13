@@ -143,11 +143,11 @@ When the parameter server is started by the cluster management system, it execut
 
 	The desired number of parameter servers is 3:
 	
-	<img src="src/paddle-ps-0.png" heigh="300"/>
+	<img src="src/paddle-ps-0.png" height="300"/>
 	
 	The third parameter server joined:
 	
-	<img src="src/paddle-ps-1.png" heigh="300"/>
+	<img src="src/paddle-ps-1.png" height="300"/>
 
 1. The parameter server can load parameters if there are already saved parameters in the save path (inferred from its index).
 1. Now the parameter server is ready for the trainers' requests.
