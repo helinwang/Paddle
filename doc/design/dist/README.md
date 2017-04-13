@@ -22,7 +22,7 @@ A training job will be created once user asks Paddle cloud to train a model. The
 
 One training job will only have one master process, typically multiple trainer processes and parameter server processes. Their relation is illustrated in the following graph:
 
-<img src="src/paddle-model-sharding.png" height="400"/>
+<img src="src/paddle-model-sharding.png"/>
 
 ### Master Process
 
@@ -41,7 +41,7 @@ A task is a piece of sharded data to be trained. The total number of tasks will 
 
 Master process has three task queues to track training progress. As illustrated in the graph below, Job A and Job B both have one master process. Each master process has three task queues.
 
-<img src="src/paddle-task-queues.png" height="400"/>
+<img src="src/paddle-task-queues.png"/>
 
 - The todo queue holds tasks to be dispatched. When a job starts, the master process fills in the todo queue with all tasks.
 - The pending queue holds tasks that are currently training by trainers.
@@ -49,7 +49,7 @@ Master process has three task queues to track training progress. As illustrated 
 
 The life cycle of a single task is illustrated below:
 
-<img src="src/paddle-task-states.png" height="400"/>
+<img src="src/paddle-task-states.png"/>
 
 1. When a new pass of training starts, all tasks will be placed in the todo queue.
 1. The master process will dispatch few tasks to each trainer at a time, puts them in the pending queue and waits for completion.
@@ -109,7 +109,7 @@ PaddlePaddle uses [etcd](https://github.com/coreos/etcd) to keep track of the st
 
 Now we will introduce how each process recovers from failure, the graph below provides an illustration:
 
-<img src="src/paddle-etcd.png" width="650"/>
+<img src="src/paddle-etcd.png"/>
 
 ### Master Process
 
