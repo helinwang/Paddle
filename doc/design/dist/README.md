@@ -28,36 +28,10 @@ One training job will only have one master process, typically multiple trainer p
 
 The master process will:
 
-- Do [parameter server selection](#parameter-server-selection).
 - Shard dataset into [tasks](#task) and dispatch tasks to trainers.
 - Keep track of training progress on the dataset with [task queue](#task-queue). A training job will iterate on the dataset for a full pass until it goes into next pass.
 
 Now we will explain the concepts mentioned above:
-
-#### Selection Request
-
-The selection request is a request that the master sends to a parameter server candidate, making it a parameter server available to the trainers. It contains information such as the parameter server index, the optimizaiton algorithm, the parameter save period, and the path for saving parameters.
-
-#### Parameter Server Selection
-
-The parameter server selection process selects parameter servers from parameter server candidates. It ensures the parameter servers that the trainers see are in consistent order, since the trainer needs to decide the parameter placement according to the consistent order.
-
-The selection process is as follows:
-
-- The master watches `/ps_candidate/` prefix in etcd. When a parameter server candidate joins and there is not enough parameter servers, the master will remove the candidate's entry in `/ps_candidate/` and send a [selection reqeust](#selection-request) to the candidate. Upon receiving the request, the candidate will set key `/ps/<index>` in etcd with a lease to make itself available for the trainers. The `<index>` is from the selection request.
-
-	The graph below shows a parameter server candidate come online and then being selected, available for the trainers:
-	
-	<img src="src/paddle-ps-0-can.png" width="650"/>
-	<img src="src/paddle-ps-0-sel.png" width="650"/>
-
-- The master watches `/ps/` prefix in etcd. When a selected parameter server went offline, the master will select a not yet selected parameter server candidate by sending the selection request to fill the missing parameter server spot.
-
-	The graph below shows one parameter server is missing, the cluster management system created a new parameter server. The new parameter server announced itself as a candidate. Then the master filled the missing parameter server spot with the new candidate.
-
-	<img src="src/paddle-ps-new-can.png" width="650"/>
-	<img src="src/paddle-ps-new-sel.png" width="650"/>
-
 
 #### Task 
 
@@ -164,11 +138,16 @@ If trainer's etcd lease expires, it will try set key `/trainer/<unique ID>` agai
 
 When the parameter server is started by the cluster management system, it executes the following steps at startup:
 
-1. Generates an unique ID, and sets key `/ps_candidate/<unique ID>` with its contact address as value and waits for the master's [selection request](#selection-request)
-1. Upon receiving master server's [selection request](#selection-request). The parameter server can load parameters if there are already saved parameters in the save path from selection request. Then Creates key `/ps/<index>` with its contact address as value.
+1. Read total number of parameter servers from etcd `/ps_count`
+1. Search though etcd keys `/ps/<index>` (`/ps/0`, `/ps/1`, ...) to find the first non-existant key and set the key using a transaction to avoid concurrent writes. The parameter server's index is inferred from the key name.
+
+	<img src="src/paddle-ps-0.png" heigh="400"/>
+	<img src="src/paddle-ps-1.png" heigh="400"/>
+
+1. The parameter server can load parameters if there are already saved parameters in the save path (inferred from its index).
 1. Now the parameter server is ready for the trainers' requests.
 
-If the parameter server's etcd lease expires, the parameter server will save its parameters to the given save path and kill itself.
+If the parameter server's etcd lease expires, the parameter server will kill itself.
 
 
 ## Dynamic Scaling
