@@ -107,7 +107,7 @@ The training job will continue to make progress if there is at least one trainin
 
 PaddlePaddle uses [etcd](https://github.com/coreos/etcd) to keep track of the states of processes. Because etcd is a distributed reliable key-value store, the restarted process can recover its states from etcd. The model parameter are periodically saved into distributed file system, so a restarted parameter server can recover its parameters from the saved file.
 
-Now we will introduce how each process recovers from failure:
+Now we will introduce how each process recovers from failure, the graph below provides an illustration:
 
 <img src="src/paddle-etcd.png" width="650"/>
 
@@ -141,8 +141,8 @@ When the parameter server is started by the cluster management system, it execut
 1. Read total number of parameter servers from etcd `/ps_count`
 1. Search though etcd keys `/ps/<index>` (`/ps/0`, `/ps/1`, ...) to find the first non-existant key and set the key using a transaction to avoid concurrent writes. The parameter server's index is inferred from the key name.
 
-	<img src="src/paddle-ps-0.png" heigh="400"/>
-	<img src="src/paddle-ps-1.png" heigh="400"/>
+	<img src="src/paddle-ps-0.png" heigh="300"/>
+	<img src="src/paddle-ps-1.png" heigh="300"/>
 
 1. The parameter server can load parameters if there are already saved parameters in the save path (inferred from its index).
 1. Now the parameter server is ready for the trainers' requests.
