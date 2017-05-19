@@ -91,8 +91,7 @@ func paddle_new_pserver_client(addr *C.char) C.client {
 
 //export paddle_pserver_client_release
 func paddle_pserver_client_release(client C.client) {
-	c := remove(client)
-	c.Cleanup()
+	remove(client)
 }
 
 //export paddle_begin_init_params

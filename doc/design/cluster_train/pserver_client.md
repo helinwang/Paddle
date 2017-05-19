@@ -89,8 +89,7 @@ void paddle_pserver_client_release(paddle_pserver_client* client);
  *
  * paddle_begin_init_params will be called from multiple trainers,
  * only one trainer will be selected to initialize the parameters on
- * parameter servers. Other trainers will be blocked until the
- * initialization is done, and they need to get the initialized
+ * parameter servers. Other trainers need to get the initialized
  * parameters from parameter servers using @paddle_get_params.
  *
  * @param pserver_config_proto serialized parameter server configuration in
@@ -137,6 +136,9 @@ int paddle_send_grads(paddle_pserver_client* client, const paddle_gradient* grad
 
 /**
  * @brief paddle_get_params gets parameters from parameter servers.
+ *
+ * paddle_get_params will block until parameters are initialized on
+ * the parameter servers.
  *
  * @param names the array of names of the parameters to get.
  * @param dst the destination array of parameters to save to.
