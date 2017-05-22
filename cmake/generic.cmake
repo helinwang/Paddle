@@ -78,7 +78,11 @@ function(cc_test TARGET_NAME)
   set(multiValueArgs SRCS DEPS)
   cmake_parse_arguments(cc_test "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
   add_executable(${TARGET_NAME} ${cc_test_SRCS})
-  link_paddle_test(${TARGET_NAME})
+  target_link_libraries(${TARGET_NAME}
+    #gtest_main
+    ${GTEST_LIBRARIES})
+
+  #link_paddle_test(${TARGET_NAME})
   if(cc_test_DEPS)
     target_link_libraries(${TARGET_NAME} ${cc_test_DEPS})
     add_dependencies(${TARGET_NAME} ${cc_test_DEPS})
@@ -133,7 +137,11 @@ function(nv_test TARGET_NAME)
   set(multiValueArgs SRCS DEPS)
   cmake_parse_arguments(nv_test "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
   cuda_add_executable(${TARGET_NAME} ${nv_test_SRCS})
-  link_paddle_test(${TARGET_NAME})  
+  target_link_libraries(${TARGET_NAME}
+    #gtest_main
+    ${GTEST_LIBRARIES})
+
+  #link_paddle_test(${TARGET_NAME})  
   if(nv_test_DEPS)
     target_link_libraries(${TARGET_NAME} ${nv_test_DEPS})
     add_dependencies(${TARGET_NAME} ${nv_test_DEPS})
