@@ -245,7 +245,7 @@ func paddle_get_params(client C.client, names **C.char, dst **C.paddle_parameter
 func paddle_save_model(client C.client, path *C.char) C.int {
 	p := C.GoString(path)
 	c := get(client)
-	err := c.SaveModel(p)
+	err := c.Save(p)
 	if err != nil {
 		log.Println(err)
 		return -1

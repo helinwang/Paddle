@@ -101,7 +101,6 @@ func (c *Client) FinishInitParams() error {
 		if err != nil {
 			return err
 		}
-
 	}
 	return nil
 }
@@ -109,8 +108,7 @@ func (c *Client) FinishInitParams() error {
 // SendGrads sends gradients to parameter servers for updating
 // parameters.
 func (c *Client) SendGrads(grads []Gradient) error {
-	count := len(grads)
-	errCh := make(chan error, count)
+	errCh := make(chan error, len(grads))
 	for _, g := range grads {
 		go func(g Gradient) {
 			var dummy int
@@ -126,7 +124,7 @@ func (c *Client) SendGrads(grads []Gradient) error {
 		}
 
 		recv++
-		if recv == count {
+		if recv == len(grads) {
 			break
 		}
 	}
@@ -183,14 +181,13 @@ func (c *Client) GetParams(names []string) ([]Parameter, error) {
 	return ps, nil
 }
 
-// SaveModel indicates parameters to save the parameter to the given
-// path.
-func (c *Client) SaveModel(path string) error {
+// Save indicates parameters to save the parameter to the given path.
+func (c *Client) Save(path string) error {
 	errCh := make(chan error, len(c.pservers))
 
 	for _, p := range c.pservers {
 		var dummy int
-		err := p.Call("Service.SaveModel", path, &dummy)
+		err := p.Call("Service.Save", path, &dummy)
 		errCh <- err
 	}
 
@@ -205,6 +202,9 @@ func (c *Client) SaveModel(path string) error {
 			break
 		}
 	}
+
+	// TODO(helin): there will be many files under path, need to
+	// merge them into a single file.
 	return nil
 }
 
