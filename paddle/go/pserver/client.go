@@ -1,43 +1,78 @@
 package pserver
 
-import "net/rpc"
+import (
+	"hash/fnv"
+	"log"
+	"sort"
+	"time"
 
-// Selector selects a client from multiple clients for initializing
-// parameters.
+	"github.com/PaddlePaddle/Paddle/paddle/go/pserver/internal/connection"
+)
+
+// TODO(helin): add RPC call retry logic
+
+// Selector selects if the client should initialize parameter servers.
 type Selector interface {
 	Select() bool
 }
 
-// ServerInfo is the parameter server information.
-type ServerInfo struct {
-	Addr  string
+// Server is the identification of a parameter Server.
+type Server struct {
 	Index int
+	Addr  string
 }
 
-// Lister lists the server info of parameter server
+// Lister lists parameter servers.
 type Lister interface {
-	// List will block until all parameter servers are present
-	List() []ServerInfo
+	// List returns currently available parameter servers.
+	List() []Server
 }
 
 // Client is the client to parameter servers.
 type Client struct {
-	sel    Selector
-	client *rpc.Client
+	sel      Selector
+	pservers []*connection.Conn
 }
 
 // TODO(helin): add TCP re-connect logic
 
 // NewClient creates a new client.
-//
-// NewClient will block until all parameter servers are ready.
-func NewClient(lister Lister, sel Selector) (*Client, error) {
-	client, err := rpc.DialHTTP("tcp", addr)
-	if err != nil {
-		return nil, err
+func NewClient(l Lister, pserverNum int, sel Selector) *Client {
+	c := &Client{sel: sel}
+	c.pservers = make([]*connection.Conn, pserverNum)
+	for i := 0; i < pserverNum; i++ {
+		c.pservers[i] = connection.New()
 	}
+	go c.monitorServers(l, pserverNum)
+	return c
+}
 
-	return &Client{sel: sel, client: client}, nil
+func (c *Client) monitorServers(l Lister, pserverNum int) {
+	knownServers := make([]Server, pserverNum)
+	ticker := time.NewTicker(10 * time.Second)
+	for _ = range ticker.C {
+		curServers := make([]Server, pserverNum)
+		list := l.List()
+		for _, l := range list {
+			curServers[l.Index] = l
+		}
+
+		for i := range knownServers {
+			if knownServers[i].Addr != curServers[i].Addr {
+				err := c.pservers[i].Connect(curServers[i].Addr)
+				if err != nil {
+					log.Println(err)
+
+					// connect to addr failed, set
+					// to last known addr in order
+					// to retry next time.
+					curServers[i].Addr = knownServers[i].Addr
+				}
+			}
+		}
+
+		knownServers = curServers
+	}
 }
 
 // BeginInitParams begins to initialize parameters on parameter
@@ -48,15 +83,9 @@ func NewClient(lister Lister, sel Selector) (*Client, error) {
 // servers. Other trainers will be blocked until the initialization is
 // done, and they need to get the initialized parameters from
 // parameter servers using GetParams.
-func (c *Client) BeginInitParams(pserverConfigProto []byte) (selected bool, err error) {
+func (c *Client) BeginInitParams() (selected bool, err error) {
 	selected = c.sel.Select()
 	if !selected {
-		return
-	}
-
-	var dummy int
-	err = c.client.Call("Service.BeginInitParams", pserverConfigProto, &dummy)
-	if err != nil {
 		return
 	}
 
@@ -66,34 +95,134 @@ func (c *Client) BeginInitParams(pserverConfigProto []byte) (selected bool, err 
 // InitParam initializes the parameter on parameter servers.
 func (c *Client) InitParam(paramWithConfigs ParameterWithConfig) error {
 	var dummy int
-	return c.client.Call("Service.InitParam", paramWithConfigs, &dummy)
+	return c.pservers[c.partition(paramWithConfigs.Param.Name)].Call("Service.InitParam", paramWithConfigs, &dummy)
 }
 
 // FinishInitParams tells parameter servers client has sent all
 // parameters to parameter servers as initialization.
 func (c *Client) FinishInitParams() error {
-	var dummy int
-	return c.client.Call("Service.FinishInitParams", dummy, &dummy)
+	for _, p := range c.pservers {
+		var dummy int
+		err := p.Call("Service.FinishInitParams", dummy, &dummy)
+		if err != nil {
+			return err
+		}
+
+	}
+	return nil
 }
 
 // SendGrads sends gradients to parameter servers for updating
 // parameters.
 func (c *Client) SendGrads(grads []Gradient) error {
-	var dummy int
-	return c.client.Call("Service.SendGrads", grads, &dummy)
+	count := len(grads)
+	errCh := make(chan error, count)
+	for _, g := range grads {
+		go func(g Gradient) {
+			var dummy int
+			err := c.pservers[c.partition(g.Name)].Call("Service.SendGrad", g, &dummy)
+			errCh <- err
+		}(g)
+	}
+
+	recv := 0
+	for err := range errCh {
+		if err != nil {
+			return err
+		}
+
+		recv++
+		if recv == count {
+			break
+		}
+	}
+	return nil
+}
+
+type result struct {
+	idx int
+	p   Parameter
+	err error
+}
+
+type results []result
+
+func (r results) Len() int {
+	return len(r)
+}
+
+func (r results) Less(i int, j int) bool {
+	return r[i].idx < r[j].idx
+}
+
+func (r results) Swap(i int, j int) {
+	r[i], r[j] = r[j], r[i]
 }
 
 // GetParams gets parameters from parameter servers.
 func (c *Client) GetParams(names []string) ([]Parameter, error) {
-	var dummy int
-	var parameters []Parameter
-	err := c.client.Call("Service.GetParams", &parameters, &dummy)
-	return parameters, err
+	rCh := make(chan result, len(names))
+
+	for idx, name := range names {
+		go func(name string, idx int) {
+			var dummy int
+			var parameter Parameter
+			err := c.pservers[c.partition(name)].Call("Service.GetParam", parameter, &dummy)
+			rCh <- result{idx: idx, p: parameter, err: err}
+		}(name, idx)
+	}
+
+	var rs results
+	for r := range rCh {
+		if r.err != nil {
+			return nil, r.err
+		}
+		rs = append(rs, r)
+	}
+	sort.Sort(rs)
+
+	ps := make([]Parameter, len(rs))
+	for i := range rs {
+		ps[i] = rs[i].p
+	}
+
+	return ps, nil
 }
 
 // SaveModel indicates parameters to save the parameter to the given
 // path.
 func (c *Client) SaveModel(path string) error {
-	var dummy int
-	return c.client.Call("Service.SaveModel", path, &dummy)
+	errCh := make(chan error, len(c.pservers))
+
+	for _, p := range c.pservers {
+		var dummy int
+		err := p.Call("Service.SaveModel", path, &dummy)
+		errCh <- err
+	}
+
+	recv := 0
+	for err := range errCh {
+		if err != nil {
+			return err
+		}
+
+		recv++
+		if recv == len(c.pservers) {
+			break
+		}
+	}
+	return nil
+}
+
+func strHash(s string) uint32 {
+	h := fnv.New32a()
+	h.Write([]byte(s))
+	return h.Sum32()
+}
+
+// TODO(helin): now partition only select which parameter server to
+// send the entire parameter. We need to partition a parameter into
+// small blocks and send to different parameter servers.
+func (c *Client) partition(key string) int {
+	return int(strHash(key) % uint32(len(c.pservers)))
 }
