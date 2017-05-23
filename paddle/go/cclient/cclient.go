@@ -90,30 +90,23 @@ func (s selector) Select() bool {
 	return bool(s)
 }
 
-type lister struct {
-	servers []pserver.Server
-}
-
-func newLister(addrs []string) *lister {
-	d := &lister{}
-	d.servers = make([]pserver.Server, len(addrs))
-	for i := range addrs {
-		d.servers[i].Index = i
-		d.servers[i].Addr = addrs[i]
-	}
-	return d
-}
+type lister []pserver.Server
 
 // List lists parameter servers.
-func (d *lister) List() []pserver.Server {
-	return d.servers
+func (l lister) List() []pserver.Server {
+	return l
 }
 
 //export paddle_new_pserver_client
 func paddle_new_pserver_client(addrs *C.char, selected bool) C.client {
 	a := C.GoString(addrs)
 	as := strings.Split(a, ",")
-	c := pserver.NewClient(newLister(as), len(as), selector(selected))
+	servers := make([]pserver.Server, len(as))
+	for i := range as {
+		servers[i].Index = i
+		servers[i].Addr = as[i]
+	}
+	c := pserver.NewClient(lister(servers), len(as), selector(selected))
 	return add(c)
 }
 
