@@ -123,13 +123,7 @@ func paddle_pserver_client_release(client C.client) {
 //export paddle_begin_init_params
 func paddle_begin_init_params(client C.client) C.int {
 	c := get(client)
-	selected, err := c.BeginInitParams()
-	if err != nil {
-		log.Println(err)
-		return -1
-	}
-
-	if selected {
+	if selected := c.BeginInitParams(); selected {
 		return 1
 	}
 	return 0

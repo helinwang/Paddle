@@ -82,13 +82,8 @@ func (c *Client) monitorPservers(l Lister, pserverNum int) {
 // servers. Other trainers will be blocked until the initialization is
 // done, and they need to get the initialized parameters from
 // parameter servers using GetParams.
-func (c *Client) BeginInitParams() (selected bool, err error) {
-	selected = c.sel.Select()
-	if !selected {
-		return
-	}
-
-	return true, nil
+func (c *Client) BeginInitParams() bool {
+	return c.sel.Select()
 }
 
 // InitParam initializes the parameter on parameter servers.
