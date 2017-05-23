@@ -22,9 +22,8 @@ type Server struct {
 	Addr  string
 }
 
-// Lister lists parameter servers.
+// Lister lists currently available parameter servers.
 type Lister interface {
-	// List returns currently available parameter servers.
 	List() []Server
 }
 
@@ -34,8 +33,6 @@ type Client struct {
 	pservers []*connection.Conn
 }
 
-// TODO(helin): add TCP re-connect logic
-
 // NewClient creates a new client.
 func NewClient(l Lister, pserverNum int, sel Selector) *Client {
 	c := &Client{sel: sel}
@@ -43,11 +40,13 @@ func NewClient(l Lister, pserverNum int, sel Selector) *Client {
 	for i := 0; i < pserverNum; i++ {
 		c.pservers[i] = connection.New()
 	}
-	go c.monitorServers(l, pserverNum)
+	go c.monitorPservers(l, pserverNum)
 	return c
 }
 
-func (c *Client) monitorServers(l Lister, pserverNum int) {
+// monitorPservers monitors pserver addresses, and update connection
+// when the address changes.
+func (c *Client) monitorPservers(l Lister, pserverNum int) {
 	knownServers := make([]Server, pserverNum)
 	ticker := time.NewTicker(10 * time.Second)
 	for _ = range ticker.C {

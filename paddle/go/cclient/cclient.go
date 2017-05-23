@@ -92,7 +92,6 @@ func (s selector) Select() bool {
 
 type lister []pserver.Server
 
-// List lists parameter servers.
 func (l lister) List() []pserver.Server {
 	return l
 }
@@ -111,7 +110,7 @@ func paddle_new_pserver_client(addrs *C.char, selected bool) C.client {
 }
 
 //export paddle_new_etcd_pserver_client
-func paddle_new_etcd_pserver_client(addr *C.char) C.client {
+func paddle_new_etcd_pserver_client(etcd_addr *C.char) C.client {
 	// TODO(helin): fault tolerant pserver client using etcd.
 	panic("not implemented.")
 }
