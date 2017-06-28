@@ -265,10 +265,10 @@ function(go_library TARGET_NAME)
 
   if (go_library_SHARED OR go_library_shared)
     set(BUILD_MODE "-buildmode=c-shared")
-    set(LIB_NAME "${CMAKE_SHARED_LIBRARY_PREFIX}${TARGET_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    set(${TARGET_NAME}_LIB_NAME "${CMAKE_SHARED_LIBRARY_PREFIX}${TARGET_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}" PARENT_SCOPE)
   else()
     set(BUILD_MODE "-buildmode=c-archive")
-    set(LIB_NAME "${CMAKE_STATIC_LIBRARY_PREFIX}${TARGET_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX}")
+    set(${TARGET_NAME}_LIB_NAME "${CMAKE_STATIC_LIBRARY_PREFIX}${TARGET_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX}" PARENT_SCOPE)
   endif()
 
   # Add dummy code to support `make target_name` under Terminal Command
@@ -290,7 +290,7 @@ function(go_library TARGET_NAME)
   # want to build.
   file(GLOB GO_SOURCE RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*.go")
   add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-    COMMAND rm "${CMAKE_CURRENT_BINARY_DIR}/${LIB_NAME}"
+    COMMAND rm "${CMAKE_CURRENT_BINARY_DIR}/${${TARGET_NAME}_LIB_NAME}"
     # Symlink Paddle directory into GOPATH
     COMMAND mkdir -p ${PADDLE_IN_GOPATH}
     COMMAND rm -rf ${PADDLE_IN_GOPATH}                                                                                                                                         
@@ -299,7 +299,7 @@ function(go_library TARGET_NAME)
     COMMAND env GOPATH=${GOPATH} ${CMAKE_Go_COMPILER} get -d ./...
     # Golang build source code
     COMMAND env GOPATH=${GOPATH} ${CMAKE_Go_COMPILER} build ${BUILD_MODE}
-    -o "${CMAKE_CURRENT_BINARY_DIR}/${LIB_NAME}"
+    -o "${CMAKE_CURRENT_BINARY_DIR}/${${TARGET_NAME}_LIB_NAME}"
     ${GO_SOURCE}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endfunction(go_library)

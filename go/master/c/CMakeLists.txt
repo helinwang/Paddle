@@ -9,13 +9,13 @@ project(cxx_go C Go)
 include(golang)
 include(flags)
 
-set(MASTER_LIB_NAME "paddle_master")
-go_library(${MASTER_LIB_NAME} SHARED)
+go_library(paddle_master SHARED)
 
 if(PROJ_ROOT)
-  add_custom_command(OUTPUT ${PROJ_ROOT}/python/paddle/v2/master/lib${MASTER_LIB_NAME}.so
-    COMMAND rm ${CMAKE_CURRENT_BINARY_DIR}/lib${MASTER_LIB_NAME}.h
-    COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/lib${MASTER_LIB_NAME}.so ${PROJ_ROOT}/python/paddle/v2/master/
-    DEPENDS ${MASTER_LIB_NAME})
-  add_custom_target(paddle_master_shared ALL DEPENDS ${PROJ_ROOT}/python/paddle/v2/master/lib${MASTER_LIB_NAME}.so)
+  # using missing file paddle_master_copy as output, so this command
+  # will run everytime.
+  add_custom_command(OUTPUT paddle_master_copy
+    COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/${paddle_master_LIB_NAME} ${PROJ_ROOT}/python/paddle/v2/master/
+    DEPENDS paddle_master)
+  add_custom_target(paddle_master_python ALL DEPENDS paddle_master_copy)
 endif(PROJ_ROOT)

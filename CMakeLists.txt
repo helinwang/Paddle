@@ -134,8 +134,8 @@ add_subdirectory(paddle)
 add_subdirectory(python)
 
 if(WITH_GOLANG)
-    #TODO (add go/master/c back when fixed)
-    add_subdirectory(go/pserver/cclient)
+  add_subdirectory(go/master/c)
+  add_subdirectory(go/pserver/cclient)
 endif(WITH_GOLANG)
 
 if(WITH_DOC)
