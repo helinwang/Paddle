@@ -11,16 +11,21 @@ set(PY_FILES paddle/__init__.py
              ${HELPERS_PY_FILES}
              ${UTILS_PY_FILES}
              ${V2_PY_FILES})
-
-message("***********so dir*********" ${paddle_master_LIB_PATH})
 	   
+# using missing file paddle_master_copy as output, so this command
+# will run everytime.
+add_custom_target(copy_paddle_master)
+add_custom_command(TARGET copy_paddle_master
+  COMMAND cp ${paddle_master_LIB_PATH} ${PROJ_ROOT}/python/paddle/v2/master/
+  )
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in
     ${CMAKE_CURRENT_BINARY_DIR}/setup.py)
 
 add_custom_command(OUTPUT ${OUTPUT_DIR}/.timestamp
     COMMAND env ${py_env} ${PYTHON_EXECUTABLE} setup.py bdist_wheel
     COMMAND ${CMAKE_COMMAND} -E touch ${OUTPUT_DIR}/.timestamp
-    DEPENDS gen_proto_py ${PY_FILES} ${external_project_dependencies})
+    DEPENDS gen_proto_py ${PY_FILES} ${external_project_dependencies} copy_paddle_master)
 
 add_custom_target(paddle_python ALL DEPENDS
     ${OUTPUT_DIR}/.timestamp)
