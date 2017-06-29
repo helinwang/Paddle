@@ -130,8 +130,6 @@ if(WITH_GPU)
 endif(WITH_GPU)
 
 add_subdirectory(proto)
-add_subdirectory(paddle)
-add_subdirectory(python)
 
 if(WITH_GOLANG)
   # we need to symlink Paddle directory into GOPATH. If we
@@ -160,6 +158,8 @@ if(WITH_GOLANG)
   add_subdirectory(go/pserver/cclient)
 endif(WITH_GOLANG)
 
+add_subdirectory(paddle)
+add_subdirectory(python)
 if(WITH_DOC)
     add_subdirectory(doc)
 endif()
