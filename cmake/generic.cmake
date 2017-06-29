@@ -281,11 +281,6 @@ function(go_library TARGET_NAME)
     add_dependencies(${TARGET_NAME} ${go_library_DEPS})
   endif(go_library_DEPS)
 
-  # we need to symlink Paddle directory into GOPATH. If we
-  # don't do it and we have code that depends on Paddle, go
-  # get ./... will download a new Paddle repo from Github,
-  # without the changes in our current Paddle repo that we
-  # want to build.
   file(GLOB GO_SOURCE RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*.go")
   add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
     COMMAND rm "${CMAKE_CURRENT_BINARY_DIR}/${${TARGET_NAME}_LIB_NAME}"

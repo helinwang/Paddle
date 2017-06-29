@@ -134,13 +134,16 @@ add_subdirectory(paddle)
 add_subdirectory(python)
 
 if(WITH_GOLANG)
+  # we need to symlink Paddle directory into GOPATH. If we
+  # don't do it and we have code that depends on Paddle, go
+  # get ./... will download a new Paddle repo from Github,
+  # without the changes in our current Paddle repo that we
+  # want to build.
   set(GOPATH "${CMAKE_CURRENT_BINARY_DIR}/go")
   file(MAKE_DIRECTORY ${GOPATH})
   set(PADDLE_IN_GOPATH "${GOPATH}/src/github.com/PaddlePaddle/Paddle")
-
   add_custom_target(go_path)
   add_custom_command(TARGET go_path
-    COMMAND rm "${CMAKE_CURRENT_BINARY_DIR}/${${TARGET_NAME}_LIB_NAME}"
     # Symlink Paddle directory into GOPATH
     COMMAND mkdir -p ${PADDLE_IN_GOPATH}
     COMMAND rm -rf ${PADDLE_IN_GOPATH}
