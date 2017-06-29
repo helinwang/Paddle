@@ -149,6 +149,9 @@ if(WITH_GOLANG)
     COMMAND rm -rf ${PADDLE_IN_GOPATH}
     COMMAND ln -sf ${CMAKE_SOURCE_DIR} ${PADDLE_IN_GOPATH}
     # Automatically get all dependencies specified in the source code
+    # We can't run `go get -d ./...` for every target, because
+    # multiple `go get` can not run concurrently, but make need to be
+    # able to run with multiple jobs.
     COMMAND env GOPATH=${GOPATH} ${CMAKE_Go_COMPILER} get -d ./go/...
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
