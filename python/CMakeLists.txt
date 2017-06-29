@@ -12,6 +12,8 @@ set(PY_FILES paddle/__init__.py
              ${UTILS_PY_FILES}
              ${V2_PY_FILES})
 
+message("***********so dir*********" ${paddle_master_LIB_PATH})
+	   
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in
     ${CMAKE_CURRENT_BINARY_DIR}/setup.py)
 

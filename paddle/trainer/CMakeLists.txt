@@ -72,6 +72,6 @@ endif()
 
 if(WITH_GOLANG)
   add_dependencies(paddle_trainer_lib paddle_pserver_cclient)
-  target_link_libraries(paddle_trainer ${paddle_pserver_cclient_LIB_PATH})
-  target_link_libraries(paddle_trainer_lib ${paddle_pserver_cclient_LIB_PATH})
+  target_link_libraries(paddle_trainer paddle_pserver_cclient)#${paddle_pserver_cclient_LIB_PATH})
+  target_link_libraries(paddle_trainer_lib paddle_pserver_cclient)${paddle_pserver_cclient_LIB_PATH})
 endif(WITH_GOLANG)
