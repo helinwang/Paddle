@@ -134,6 +134,22 @@ add_subdirectory(paddle)
 add_subdirectory(python)
 
 if(WITH_GOLANG)
+  set(GOPATH "${CMAKE_CURRENT_BINARY_DIR}/go")
+  file(MAKE_DIRECTORY ${GOPATH})
+  set(PADDLE_IN_GOPATH "${GOPATH}/src/github.com/PaddlePaddle/Paddle")
+
+  add_custom_target(go_path)
+  add_custom_command(TARGET go_path
+    COMMAND rm "${CMAKE_CURRENT_BINARY_DIR}/${${TARGET_NAME}_LIB_NAME}"
+    # Symlink Paddle directory into GOPATH
+    COMMAND mkdir -p ${PADDLE_IN_GOPATH}
+    COMMAND rm -rf ${PADDLE_IN_GOPATH}
+    COMMAND ln -sf ${CMAKE_SOURCE_DIR} ${PADDLE_IN_GOPATH}
+    # Automatically get all dependencies specified in the source code
+    COMMAND env GOPATH=${GOPATH} ${CMAKE_Go_COMPILER} get -d ./go/...
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  )
+
   add_subdirectory(go/master/c)
   add_subdirectory(go/pserver/cclient)
 endif(WITH_GOLANG)
