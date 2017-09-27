@@ -31,13 +31,44 @@ We need a session concept to address above issues.
 
 ## Session
 
-A session is an object that owns all runtime states such as scope,
+A session is an object that owns all runtime states. The computations
+are executed through `session.eval`.
+
+The runtime states includes:
+
+- The computation device's contexts
+- 
+
+such as scope,
 reader OP's file handles, connection to a remote PaddlePaddle cluster,
 etc.
 
-The session has two methods: `eval` and `close`. `eval` executes the
-target OP in a given graph, and `close` closes the session and
-releases all related resources:
+### Methods
+
+```
+eval(
+    targets,
+	feed_dict=None,
+)
+```
+
+Evaluates the target Operations or Variables in `targets`.
+
+```
+close()
+```
+
+Closes the session. Calling this method frees all resources associated
+with the session.
+
+```
+session()
+```
+
+Creates a new session
+
+
+#### Example
 
 ```Python
 a = paddle.constant(1.0)
