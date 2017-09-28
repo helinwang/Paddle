@@ -29,12 +29,12 @@ remote computation resource in a cluster from his local computer.
 
 ## Background
 
-The current design has an implicit global session on which
+The current design has an implicit global session in which
 `paddle.eval()` is executed. The pain point is:
 
 Since the user is not able to explicitly switch between runtime
-environments such as the scope and the device contexts, the user
-cannot run a topology in two independent environments.
+environments, the user cannot run a topology in two independent
+environments.
 
 For example, in reinforcement learning, the user may want to have a
 stale model for inference and a fresh model for training, and only
@@ -49,7 +49,7 @@ We need the session object to address above issues.
 ## Session
 
 A session is an object that owns the runtime environment. All
-computations are executed through `session.eval`.
+computations are executed through `session.eval()`.
 
 
 ### Interface
@@ -64,37 +64,57 @@ eval(
 Evaluates the target Operations or Variables in `targets`.
 
 - *targets*: the evaluation targets. Can be a single Operation or
-  Variable, or a list with the Operations or Variables as elements.
+  Variable, or a list with the Operations or Variables as
+  elements. The value returned by `eval()` has the same shape as the
+  `target` argument.
 
-  The value returned by `eval()` has the same shape as the `target`
-  argument.
-
-  The computation graph is implicitly inferred from the targets.
+  The PaddlePaddle program is represented by
+  the [ProgramDesc](../design/program.md), `eval()` will infer the
+  ProgramDesc from the given targets and run the PaddlePaddle
+  program. Please
+  see
+  [this graph](./distributed_architecture.md#local-training-architecture) for
+  the detailed illustration for the local session,
+  and
+  [this graph](./distributed_architecture.md#distributed-training-architecture) for
+  the detailed illustration for the remote session.
 
 - *feed_dict*: a dictionary that contains the tensors which overrides
   the edges of the computation graph.
+
+  feed_dict not only can provide the input data, it can override any
+  OP's input as well:
+
+  ```
+  a = pd.constant(1.0, name="a")
+  b = pd.constant(2.0)
+  c = pd.mul(a,b)
+  sess.eval(targets=c, feed_dict={"a":3.0}) # returns 6.0
+  ```
 
 ```
 close()
 ```
 
-Closes the session. Calling this method releases the scope.
+Closes the session and releases the scope that the session owns.
 
 
 ### Create a Local Session
 
 ```
 session(
-    gpu_ids=None
+    devices=None
 )
 ```
 
 Creates a new session. One session owns one scope, so creating
 multiple sessions will create different scopes.
 
-- *gpu_ids*: a single `int` or a list of `int` of the GPU IDs to be
-  used as the computation devices. If not specified, all avaiable GPUs
-  will be used.
+- *devices*: a single `string` or a list of `string` of device names,
+  the corresponding devices will be the computation devices for
+  `eval()`. If not specified, all avaiable devices (e.g., all GPUs)
+  will be used. The user don't need to specify the CPU device since it
+  will be always used.
 
 
 #### Example
@@ -103,7 +123,7 @@ multiple sessions will create different scopes.
 a = paddle.constant(1.0)
 b = paddle.constant(2.0)
 c = a + b
-sess = paddle.session(gpu_ids=[0,1])
+sess = paddle.session(devices=["gpu:0", "gpu:1", "fpga:0"])
 sess.eval(c)
 sess.close()
 ```
