@@ -301,10 +301,10 @@ function(go_library TARGET_NAME)
   cmake_parse_arguments(go_library "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if (go_library_SHARED OR go_library_shared)
-    set(BUILD_MODE "-buildmode=c-shared")
+    set(GO_BUILD_FLAGS "-buildmode=c-shared")
     set(${TARGET_NAME}_LIB_NAME "${CMAKE_SHARED_LIBRARY_PREFIX}${TARGET_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE STRING "output library name for target ${TARGET_NAME}")
   else()
-    set(BUILD_MODE "-buildmode=c-archive")
+    set(GO_BUILD_FLAGS "-buildmode=c-archive -gcflags=-shared -asmflags=-shared -installsuffix=_shared -a")
     set(${TARGET_NAME}_LIB_NAME "${CMAKE_STATIC_LIBRARY_PREFIX}${TARGET_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE STRING "output library name for target ${TARGET_NAME}")
   endif()
 
@@ -348,7 +348,7 @@ function(go_library TARGET_NAME)
   add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
     COMMAND rm "${${TARGET_NAME}_LIB_PATH}"
     # Golang build source code
-    COMMAND GOPATH=${GOPATH} ${CMAKE_Go_COMPILER} build ${BUILD_MODE}
+    COMMAND GOPATH=${GOPATH} ${CMAKE_Go_COMPILER} build ${GO_BUILD_FLAGS}
     -o "${${TARGET_NAME}_LIB_PATH}"
     "./${CMAKE_CURRENT_SOURCE_REL_DIR}/${GO_SOURCE}"
     # must run under GOPATH
