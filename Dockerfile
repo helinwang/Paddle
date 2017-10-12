@@ -33,7 +33,7 @@ RUN apt-get update && \
     apt-get clean -y
 
 # Install Go and glide
-RUN wget -qO- https://storage.googleapis.com/golang/go1.8.1.linux-amd64.tar.gz | \
+RUN wget -qO- https://storage.googleapis.com/golang/go1.9.1.linux-amd64.tar.gz | \
     tar -xz -C /usr/local && \
     mkdir /root/gopath && \
     mkdir /root/gopath/bin && \
